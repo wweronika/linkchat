@@ -1,7 +1,5 @@
-#!/usr/bin/env python
-from threading import Lock
-from flask import Flask, render_template, request
-from flask_socketio import SocketIO, emit, join_room, leave_room, \
+from flask import Flask, render_template, session, request
+from flask_socketio import SocketIO, Namespace, emit, join_room, leave_room, \
     close_room, rooms, disconnect
 
 # Set this variable to "threading", "eventlet" or "gevent" to test the
@@ -36,6 +34,52 @@ def test_broadcast_message(message):
 def disconnect_request():
     emit('my_response',
          {'data': 'Disconnected!'})
+    disconnect()
+
+
+@socketio.on('connect', namespace='/test')
+def test_connect():
+    emit('my_response', {'data': 'Connected', 'count': 0})
+
+
+@socketio.on('disconnect', namespace='/test')
+def test_disconnect():
+    print('Client disconnected', request.sid)
+
+@socketio.on('join', namespace='/test')
+def join(message):
+    join_room(message['room'])
+    session['receive_count'] = session.get('receive_count', 0) + 1
+    emit('my_response',
+         {'data': 'In rooms: ' + ', '.join(rooms())})
+
+
+@socketio.on('leave', namespace='/test')
+def leave(message):
+    leave_room(message['room'])
+    session['receive_count'] = session.get('receive_count', 0) + 1
+    emit('my_response',
+         {'data': 'In rooms: ' + ', '.join(rooms())})
+
+
+@socketio.on('close_room', namespace='/test')
+def close(message):
+    session['receive_count'] = session.get('receive_count', 0) + 1
+    emit('my_response', {'data': 'Room ' + message['room'] + ' is closing.'},
+         room=message['room'])
+    close_room(message['room'])
+
+
+@socketio.on('my_room_event', namespace='/test')
+def send_room_message(message):
+    session['receive_count'] = session.get('receive_count', 0) + 1
+    emit('my_response',
+         {'data': message['data']},
+         room=message['room'])
+
+
+if __name__ == '__main__':
+    socketio.run(app, debug=True)
     disconnect()
 
 
