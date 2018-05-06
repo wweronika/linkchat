@@ -1,0 +1,1 @@
+insert into group_user values(1,1)
