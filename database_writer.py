@@ -8,7 +8,9 @@ arguments = sys.argv[1:]
 
 for argument in arguments:
     file = open(argument, "r")
-    cursor.execute(file.read())
+    file_content = file.read()
+    for command in file_content.split(';'):
+    	cursor.execute(command)
 
 connection.commit()
 connection.close()
