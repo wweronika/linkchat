@@ -15,3 +15,5 @@ while True:
     result = cursor.execute(command)
     for row in result:
         print(row)
+
+connection.close()
