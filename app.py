@@ -29,7 +29,7 @@ def login_verify():
 
     connection = sqlite3.connect('data.db')
     cursor = connection.cursor()
-    t = (0, request.form['login'], '', '', request.form['email']) #all IDs set to 0 since a classic global variable is insufficient
+    t = ('', request.form['login'], '', '', request.form['email']) #all IDs set to 0 since a classic global variable is insufficient
     cursor.execute('insert into Users values (?, ?, ?, ?, ?)', t)
     connection.commit()
     connection.close()
