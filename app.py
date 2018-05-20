@@ -1,8 +1,15 @@
-from flask import Flask, render_template, session, request
+from flask import Flask, render_template, session, request, redirect, url_for
 from flask_socketio import SocketIO, Namespace, emit, join_room, leave_room, \
     close_room, rooms, disconnect
 import sqlite3
 
+"""
+
+
+
+
+
+"""
 
 # Set this variable to "threading", "eventlet" or "gevent" to test the
 # different async modes, or leave it set to None for the application to choose
@@ -13,27 +20,31 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app, async_mode=async_mode)
 
+
 @app.route('/')
 def index():
     return render_template('index.html', async_mode=socketio.async_mode)
 
-@app.route('/login')
-def login():
-    return render_template('login.html', async_mode=socketio.async_mode)
 
-@app.route('/login-verify', methods=["post", "get"])
-def login_verify():
-    print('data received in login')
+@app.route('/register')
+def register():
+    return render_template('register.html', async_mode=socketio.async_mode)
+
+
+@app.route('/register-verify', methods=["post", "get"])
+def lregister_verify():
+    print('data received in register')
     print(request.form)
     print(request.form['login'])
 
     connection = sqlite3.connect('data.db')
     cursor = connection.cursor()
-    t = ('', request.form['login'], '', '', request.form['email']) #all IDs set to 0 since a classic global variable is insufficient
-    cursor.execute('insert into Users values (?, ?, ?, ?, ?)', t)
+    t = (request.form['login'], '123', '123', request.form['email'])
+    cursor.execute('insert into Users (login, password, salt, email) values(?,?,?,?)', t)
     connection.commit()
     connection.close()
-    return ""
+    return redirect(url_for('index'))
+
 
 @socketio.on('my_event', namespace='/test')
 def test_message(message):
@@ -46,7 +57,6 @@ def test_broadcast_message(message):
     emit('my_response',
          {'data': message['data']},
          broadcast=True)
-
 
 
 @socketio.on('disconnect_request', namespace='/test')
@@ -64,6 +74,7 @@ def test_connect():
 @socketio.on('disconnect', namespace='/test')
 def test_disconnect():
     print('Client disconnected', request.sid)
+
 
 @socketio.on('join', namespace='/test')
 def join(message):
