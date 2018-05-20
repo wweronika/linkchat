@@ -10,7 +10,7 @@ for argument in arguments:
     file = open(argument, "r")
     file_content = file.read()
     for command in file_content.split(';'):
-    	cursor.execute(command)
+        cursor.execute(command)
 
 connection.commit()
 connection.close()
