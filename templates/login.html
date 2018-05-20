@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Log in</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for("static", filename='hack.css') }}">
+    <script type="text/javascript" src="{{ url_for("static", filename='vue.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for("static", filename='axios.min.js') }}"></script>
+</head>
+
+{% raw %}
+<body class="hack dark-grey">
+
+    <div class="container justify-content-center" id="login-form">
+        <p></p>
+        <form class="form justify-content-center" method="POST">
+          <fieldset class="form-group">
+            <label for="login">USERNAME:</label>
+            <input type="text" v-model='my_login' class="form-control">
+          </fieldset>
+          <div class="form-actions">
+              <button type="button" v-on:click="submitLogin" class="btn btn-primary btn-block">Submit</button>
+            </div>
+        </form>
+        
+
+    </div>
+</body>
+{% endraw %}
+
+<script>
+
+var loginForm = new Vue({
+  el: '#login-form',
+
+  data: {
+    my_login: '',
+    token: ''
+  },
+
+  methods: {
+    submitLogin: function () {
+      axios.post('/login-verify', {
+
+        login: this.my_login
+
+      }).then(function(response) {
+          alert(response)
+      })
+      
+    }
+  }
+})
+
+
+
+</script>
+
+</html>
