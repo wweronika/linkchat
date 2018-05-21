@@ -6,9 +6,6 @@ import sqlite3
 """
 
 
-
-
-
 """
 
 # Set this variable to "threading", "eventlet" or "gevent" to test the
@@ -32,7 +29,7 @@ def register():
 
 
 @app.route('/register-verify', methods=["post", "get"])
-def lregister_verify():
+def register_verify():
     print('data received in register')
     print(request.form)
     print(request.form['login'])
@@ -45,6 +42,62 @@ def lregister_verify():
     connection.close()
     return redirect(url_for('index'))
 
+@app.route('/login', methods=['post', 'get'])
+def login():
+    return render_template('login.html', async_mode=socketio.async_mode)
+
+
+@app.route('/login-verify', methods=['post', 'get'])
+def login_verify():
+    login = request()
+    print('njnckznckznjcjnkjbjxbnkcjnsj')
+    print (login)
+    connection = sqlite3.connect('data.db')
+    cursor = connection.cursor()
+    check_login = cursor.execute('select ID from Users where login=?', (login, ))
+    ID = check_login.fetchone()
+
+    if ID is None:
+        message = {}
+        message['status'] = 'error'
+        message['message'] = 'wrong login, bro'
+        connection.commit()
+        connection.close()
+        return JSON.dumps(message)
+    
+    else:
+        token = ''.join(
+            random.SystemRandom().choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in
+            range(20))
+        
+        new_token = (ID, token, "", )
+        cursor.execute('insert into Tokens values (?, ?, ?)', new_token)
+        message = {}
+        message['status'] = 'success'
+        message['token'] = token
+        connection.commit()
+        connection.close()
+        return JSON.dumps(message)
+        
+    
+
+
+"""
+
+    /debug - a site that calls /debug-data to receive the latest data
+    from the DB
+
+"""
+@app.route('/debug')
+def debug_site():
+    return ren
+
+@app.route('/debug-data', methods=["post"])
+def debug_data():
+    pass
+
+
+    
 
 @socketio.on('my_event', namespace='/test')
 def test_message(message):
