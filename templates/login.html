@@ -14,7 +14,7 @@
 
     <div class="container justify-content-center" id="login-form">
         <p></p>
-        <form class="form justify-content-center" method="POST">
+        <form class="form justify-content-center">
           <fieldset class="form-group">
             <label for="login">USERNAME:</label>
             <input type="text" v-model='my_login' class="form-control">
@@ -41,13 +41,13 @@ var loginForm = new Vue({
 
   methods: {
     submitLogin: function () {
-      alert('działaaa?')
+      console.log('trying to log in as ' + this.my_login)
       axios.post('/login-verify', {
 
         login: this.my_login
 
-      }).then(function() {
-          alert('response')
+      }).then(function(response) {
+          console.log(response.data)
       })
       
     }

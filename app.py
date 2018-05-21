@@ -2,6 +2,7 @@ from flask import Flask, render_template, session, request, redirect, url_for
 from flask_socketio import SocketIO, Namespace, emit, join_room, leave_room, \
     close_room, rooms, disconnect
 import sqlite3
+import json
 
 """
 
@@ -47,9 +48,10 @@ def login():
     return render_template('login.html', async_mode=socketio.async_mode)
 
 
-@app.route('/login-verify', methods=['post', 'get'])
+@app.route('/login-verify', methods=['post'])
 def login_verify():
-    login = request()
+    data = request.data
+    login = json.loads(data)['login']
     print('njnckznckznjcjnkjbjxbnkcjnsj')
     print (login)
     connection = sqlite3.connect('data.db')
@@ -63,7 +65,7 @@ def login_verify():
         message['message'] = 'wrong login, bro'
         connection.commit()
         connection.close()
-        return JSON.dumps(message)
+        return json.dumps(message)
     
     else:
         token = ''.join(
@@ -77,7 +79,7 @@ def login_verify():
         message['token'] = token
         connection.commit()
         connection.close()
-        return JSON.dumps(message)
+        return json.dumps(message)
         
     
 
