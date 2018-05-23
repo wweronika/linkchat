@@ -55,8 +55,6 @@ def login():
 def login_verify():
     data = request.data
     login = json.loads(data)['login']
-    print('njnckznckznjcjnkjbjxbnkcjnsj')
-    print (login)
     connection = sqlite3.connect('data.db')
     cursor = connection.cursor()
     check_login = cursor.execute('select ID from Users where login=?', (login, ))
@@ -84,9 +82,33 @@ def login_verify():
         connection.close()
         return json.dumps(message)
         
+@app.route('/create-group')
+def create_group():
+    data = json.loads(request.data)
+    group_name = data['group_name']
+    userID = data['userID'] 
+    connection = sqlite3.connect('data.db')
+    cursor = connection.cursor()
+    new_group = (group_name, )
+    cursor.execute('INSERT INTO Groups (name) VALUES (?)', new_group)
+    groupID = cursor.execute('SELECT ID FROM Groups WHERE name=?', (group_name, ))
+    cursor.execute('INSERT INTO group_user (groupID, userID) VALUES (?, ?)', (groupID, userID, ))
+    connection.commit()
+    connection.close()
     
-
-
+@app.route(/add-members)
+def add-members():
+    data json.loads(request.data)
+    member_list = data['member_list']
+    groupID = data['groupID']
+    connection = sqlite3.connect('data.db')
+    cursor = connection.cursor()
+    for member_name in member_list:
+        memberID = cursor.execute('SELECT ID FROM Users WHERE name=?', (member_name, ))
+        if memberID is not None:
+            cursor.execute('INSERT INTO group_user (groupID, userID) VALUES (?, ?)', (groupID, memberID))
+    connection.commit()
+    connection.close()
 """
 
     /debug - a site that calls /debug-data to receive the latest data
