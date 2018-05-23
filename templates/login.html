@@ -48,6 +48,9 @@ var loginForm = new Vue({
 
       }).then(function(response) {
           console.log(response.data)
+
+          let token = response.data['token']
+          localStorage.setItem('rzeczy', token)
       })
       
     }

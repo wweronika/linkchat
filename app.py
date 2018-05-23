@@ -3,6 +3,9 @@ from flask_socketio import SocketIO, Namespace, emit, join_room, leave_room, \
     close_room, rooms, disconnect
 import sqlite3
 import json
+import random
+import string
+import chat_functions
 
 """
 
@@ -72,7 +75,7 @@ def login_verify():
             random.SystemRandom().choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in
             range(20))
         
-        new_token = (ID, token, "", )
+        new_token = (ID[0], token, "", )
         cursor.execute('insert into Tokens values (?, ?, ?)', new_token)
         message = {}
         message['status'] = 'success'
@@ -92,14 +95,25 @@ def login_verify():
 """
 @app.route('/debug')
 def debug_site():
-    return ren
+    return render_template('debug.html')
 
-@app.route('/debug-data', methods=["post"])
+@app.route('/debug-data')
 def debug_data():
-    pass
+    connection = sqlite3.connect('data.db')
+    cursor = connection.cursor()
+    users = cursor.execute("SELECT * FROM Users")
+    users = users.fetchall()
+    connection.close()
+    return json.dumps(users)
 
-
-    
+@app.route('/token-data')
+def token_data():
+    connection = sqlite3.connect('data.db')
+    cursor = connection.cursor()
+    tokens = cursor.execute("SELECT * FROM Tokens")
+    tokens = tokens.fetchall()
+    connection.close()
+    return json.dumps(tokens)
 
 @socketio.on('my_event', namespace='/test')
 def test_message(message):

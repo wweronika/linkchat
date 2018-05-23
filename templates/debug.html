@@ -10,23 +10,96 @@
 </head>
 
 <body class="hack dark-grey">
-
+{% raw %}
     <div class="container">
-        <table>
+        <table id="usersApp">
             <thead>
                 <tr>
                     <th>ID</th>
                     <th>login</th>
+                    <th>pass</th>
+                    <th>salt</th>
                     <th>mail</th>
                 </tr>
             </thead>
             <tbody>
-                <tr v-for='user in users'></tr>
+                <tr v-for='user in users'>
+                    <td>{{user[0]}}</td>
+                    <td>{{user[1]}}</td>
+                    <td>{{user[2]}}</td>
+                    <td>{{user[3]}}</td>
+                    <td>{{user[4]}}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <table id="tokensApp">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>token</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for='token in tokens'>
+                    <td>{{token[0]}}</td>
+                    <td>{{token[1]}}</td>
+                </tr>
             </tbody>
         </table>
 
 
     </div>
+{% endraw %}
 </body>
+<script>
+var usersApp = new Vue({
+  el: '#usersApp',
+  data: {
+    users: [
+        {ID: 111, login: "f", mail: "f"}
+    ]
+  },
+  methods: {
+      updateData: function() {
+          /* tutaj axiosem postujemy */
+
+          let self = this 
+
+          axios.get('/debug-data').then(function (response) {
+              self.users = response.data
+          });
+      }
+  },
+
+  created: function () {
+      this.updateData()
+  }
+})    
+
+var tokensApp = new Vue({
+  el: '#tokensApp',
+  data: {
+    tokens: []
+  },
+  methods: {
+      updateData: function() {
+          /* tutaj axiosem postujemy */
+
+          let self = this 
+
+          axios.get('/token-data').then(function (response) {
+              self.tokens = response.data
+          });
+      }
+  },
+
+  created: function () {
+      this.updateData()
+  }
+})    
+
+
+</script>
 
 </html>
