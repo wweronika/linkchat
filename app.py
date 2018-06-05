@@ -96,9 +96,9 @@ def create_group():
     connection.commit()
     connection.close()
     
-@app.route(/add-members)
-def add-members():
-    data json.loads(request.data)
+@app.route('/add-members')
+def add_members():
+    data = json.loads(request.data)
     member_list = data['member_list']
     groupID = data['groupID']
     connection = sqlite3.connect('data.db')
