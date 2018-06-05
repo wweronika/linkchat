@@ -1,3 +1,5 @@
+import sqlite3
+
 def verify_token(user_id, user_token):
     connection = sqlite3.connect('data.db')
     cursor = connection.cursor()

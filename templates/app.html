@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Log in</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for("static", filename='hack.css') }}">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <script type="text/javascript" src="{{ url_for("static", filename='vue.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for("static", filename='axios.min.js') }}"></script>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.5/socket.io.min.js"></script>
+</head>
+{% raw %}
+<body class="hack dark-grey">
+
+    <div class="container" id="chatApp">
+        <div class="grid">
+            <div class="cell -3of12">
+                <div v-for="group in groups" v-on:click="selectGroup(group)">
+                    {{group.title}}
+                    <!-- TODO: right click action -->
+                </div>
+            </div>
+            <div class="cell -6of12">
+                <div v-for="message in activeGroup.messages">
+
+                        {{message.author}} - {{message.text}}
+                    </div>
+
+            </div>
+
+            <div class="cell -3of12">
+                    <button class="btn btn-success btn-ghost" v-on:click="createGroup">create group</button>
+                    <button class="btn btn-warning btn-ghost">logout</button>
+            </div>
+        </div>
+        
+    </div>
+
+    <script>
+        var usersApp = new Vue({
+            el: '#chatApp',
+            data: {
+                userData: {
+                    login: '',
+                    token: '',
+                    ID: ''
+
+                },
+                groups: [
+                    {
+                        id: 1337,
+                        title: 'Konwersacja',
+                        messages: [
+                            {
+                                id: 1, 
+                                author: 'baczek',
+                                text: 'jadłem wczoraj prażynki'
+                            },
+                            {
+                                id: 2,
+                                author: 'prażynka',
+                                text: 'nieeeeee'
+                            }
+                        ]
+                    },
+                    {
+                        id: 2,
+                        title: 'Konwersacja 2',
+                        messages: [
+                            {
+                                id: 1, 
+                                author: 'Hideo Kojima',
+                                text: 'jutro premiera death stranding'
+                            },
+                            {
+                                id: 2,
+                                author: 'totalnieNieBaczek',
+                                text: 'Gdzie jest moje ps4'
+                            }
+                        ]
+                    }
+                ],
+
+                activeGroup: null,
+                socket: null
+            },
+            
+            methods: {
+                selectGroup: function (group) {
+                    this.activeGroup = group
+                },
+                createGroup: function () {
+                    let groupName = prompt('Podaj nazwę grupy')
+                },
+                initSocket() {
+                    let SELF = this
+                    namespace = '/chat'
+
+                    SELF.socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port + namespace)
+
+                    SELF.socket.on('connect', function() {
+                        console.log('connected')
+                        SELF.socket.emit('auth', {token: SELF.userData.token, ID: SELF.userData.ID});
+                        
+                    });
+
+                    SELF.socket.on('auth_success', function(messages) {
+                        console.log('messages:')
+                        console.log(messages);
+                    });
+                }
+                
+            },
+
+            created: function () {
+                this.activeGroup = this.groups[0]
+                this.userData.token = localStorage.getItem('token')
+                this.userData.login = localStorage.getItem('login')
+                this.userData.ID = localStorage.getItem('ID')
+
+                this.initSocket()
+            }
+        })
+    </script>
+
+</body>
+{% endraw %}

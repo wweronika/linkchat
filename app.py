@@ -73,11 +73,13 @@ def login_verify():
             random.SystemRandom().choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in
             range(20))
         
-        new_token = (ID[0], token, "", )
+        new_token = (ID[0], token, "user_info_some_day", )
         cursor.execute('insert into Tokens values (?, ?, ?)', new_token)
         message = {}
         message['status'] = 'success'
         message['token'] = token
+        message['ID'] = ID[0]
+        message['login'] = login
         connection.commit()
         connection.close()
         return json.dumps(message)
@@ -86,7 +88,7 @@ def login_verify():
 def create_group():
     data = json.loads(request.data)
     group_name = data['group_name']
-    userID = data['userID'] 
+    userID = data['userID']
     connection = sqlite3.connect('data.db')
     cursor = connection.cursor()
     new_group = (group_name, )
@@ -119,6 +121,10 @@ def add_members():
 def debug_site():
     return render_template('debug.html')
 
+@app.route('/app')
+def chat_app():
+    return render_template('app.html')
+
 @app.route('/debug-data')
 def debug_data():
     connection = sqlite3.connect('data.db')
@@ -137,37 +143,47 @@ def token_data():
     connection.close()
     return json.dumps(tokens)
 
-@socketio.on('my_event', namespace='/test')
-def test_message(message):
-    emit('my_response',
-         {'data': message['data']})
+'''
 
+    SocketIO down there
 
-@socketio.on('my_broadcast_event', namespace='/test')
+'''
+
+@socketio.on('auth', namespace='/chat')
+def auth(message):
+    print(message)
+    token = message['token']
+    ID = message['ID']
+    if chat_functions.verify_token(ID, token):
+        emit('auth_success', {'messages': 'jak na razie to działa'})
+    else:
+        emit('auth_success', {'messages': 'co ty zrobiłeś typie'})
+
+@socketio.on('my_broadcast_event', namespace='/chat')
 def test_broadcast_message(message):
     emit('my_response',
          {'data': message['data']},
          broadcast=True)
 
 
-@socketio.on('disconnect_request', namespace='/test')
+@socketio.on('disconnect_request', namespace='/chat')
 def disconnect_request():
     emit('my_response',
          {'data': 'Disconnected!'})
     disconnect()
 
 
-@socketio.on('connect', namespace='/test')
+@socketio.on('connect', namespace='/chat')
 def test_connect():
     emit('my_response', {'data': 'Connected', 'count': 0})
 
 
-@socketio.on('disconnect', namespace='/test')
+@socketio.on('disconnect', namespace='/chat')
 def test_disconnect():
     print('Client disconnected', request.sid)
 
 
-@socketio.on('join', namespace='/test')
+@socketio.on('join', namespace='/chat')
 def join(message):
     join_room(message['room'])
     session['receive_count'] = session.get('receive_count', 0) + 1
@@ -175,7 +191,7 @@ def join(message):
          {'data': 'In rooms: ' + ', '.join(rooms())})
 
 
-@socketio.on('leave', namespace='/test')
+@socketio.on('leave', namespace='/chat')
 def leave(message):
     leave_room(message['room'])
     session['receive_count'] = session.get('receive_count', 0) + 1
@@ -183,7 +199,7 @@ def leave(message):
          {'data': 'In rooms: ' + ', '.join(rooms())})
 
 
-@socketio.on('close_room', namespace='/test')
+@socketio.on('close_room', namespace='/chat')
 def close(message):
     session['receive_count'] = session.get('receive_count', 0) + 1
     emit('my_response', {'data': 'Room ' + message['room'] + ' is closing.'},

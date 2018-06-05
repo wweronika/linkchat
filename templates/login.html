@@ -50,7 +50,12 @@ var loginForm = new Vue({
           console.log(response.data)
 
           let token = response.data['token']
-          localStorage.setItem('rzeczy', token)
+          let ID = response.data['ID']
+          let login = response.data['login']
+          localStorage.setItem('token', token)
+          localStorage.setItem('ID', ID)
+          localStorage.setItem('login', login)
+          window.location = '/app';
       })
       
     }
