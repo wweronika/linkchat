@@ -155,16 +155,18 @@ def auth(message):
     token = message['token']
     ID = message['ID']
     if chat_functions.verify_token(ID, token):
-        emit('auth_success', {'messages': 'jak na razie to działa'})
+        last_messages = chat_functions.get_recent_messages(ID) # TODO: create get_recent_messages
+        emit('auth_success', {'status': 'success', 'last_messages': last_messages})
+        join_room(ID)
+        session['ID'] = ID # Client's ID is mapped with his socket
+    
     else:
-        emit('auth_success', {'messages': 'co ty zrobiłeś typie'})
+        emit('auth_success', {'status': 'fail'})
 
-@socketio.on('my_broadcast_event', namespace='/chat')
-def test_broadcast_message(message):
-    emit('my_response',
-         {'data': message['data']},
-         broadcast=True)
-
+@socketio.on('message', namespace='/chat')
+def receive_message(message):
+    user_ID = session['ID']
+    group_ID = session['groupID']
 
 @socketio.on('disconnect_request', namespace='/chat')
 def disconnect_request():

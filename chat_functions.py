@@ -27,3 +27,6 @@ def verify_user_name(user_name):
         return False 
     
     return True
+
+def get_recent_messages(user_ID):
+    return []
