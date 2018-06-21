@@ -6,6 +6,7 @@ import json
 import random
 import string
 import chat_functions
+import secret
 
 """
 
@@ -20,7 +21,12 @@ async_mode = None
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app, async_mode=async_mode)
-
+mysql = MySQL()
+app.config['MYSQL_DATABASE_USER'] = secret.user
+app.config['MYSQL_DATABASE_PASSWORD'] = secret.password
+app.config['MYSQL_DATABASE_DB'] = secret.db
+app.config['MYSQL_DATABASE_HOST'] = secret.host
+mysql.init_app(app)
 
 @app.route('/')
 def index():
