@@ -29,6 +29,9 @@ app.config['MYSQL_DATABASE_DB'] = secret.db
 app.config['MYSQL_DATABASE_HOST'] = secret.host
 mysql.init_app(app)
 
+# Database connection object
+DatabaseCursor = mysql.connection.cursor()
+
 @app.route('/')
 def index():
     return render_template('index.html', async_mode=socketio.async_mode)
@@ -41,16 +44,12 @@ def register():
 
 @app.route('/register-verify', methods=["post", "get"])
 def register_verify():
+    global DatabaseCursor
     print('data received in register')
     print(request.form)
     print(request.form['login'])
-
-    connection = sqlite3.connect('data.db')
-    cursor = connection.cursor()
     t = (request.form['login'], '123', '123', request.form['email'])
-    cursor.execute('insert into Users (login, password, salt, email) values(?,?,?,?)', t)
-    connection.commit()
-    connection.close()
+    DatabaseCursor.execute('insert into Users (login, password, salt, email) values(?,?,?,?)', t)
     return redirect(url_for('index'))
 
 @app.route('/login', methods=['post', 'get'])
@@ -60,19 +59,16 @@ def login():
 
 @app.route('/login-verify', methods=['post'])
 def login_verify():
+    global DatabaseCursor
     data = request.data
     login = json.loads(data)['login']
-    connection = sqlite3.connect('data.db')
-    cursor = connection.cursor()
-    check_login = cursor.execute('select ID from Users where login=?', (login, ))
+    check_login = DatabaseCursor.execute('select ID from Users where login=?', (login, ))
     ID = check_login.fetchone()
 
     if ID is None:
         message = {}
         message['status'] = 'error'
         message['message'] = 'wrong login, bro'
-        connection.commit()
-        connection.close()
         return json.dumps(message)
     
     else:
@@ -81,43 +77,36 @@ def login_verify():
             range(20))
         
         new_token = (ID[0], token, "user_info_some_day", )
-        cursor.execute('insert into Tokens values (?, ?, ?)', new_token)
+        DatabaseCursor.execute('insert into Tokens values (?, ?, ?)', new_token)
         message = {}
         message['status'] = 'success'
         message['token'] = token
         message['ID'] = ID[0]
         message['login'] = login
-        connection.commit()
-        connection.close()
         return json.dumps(message)
         
 @app.route('/create-group')
 def create_group():
+    global DatabaseCursor
     data = json.loads(request.data)
     group_name = data['group_name']
     userID = data['userID']
-    connection = sqlite3.connect('data.db')
-    cursor = connection.cursor()
     new_group = (group_name, )
-    cursor.execute('INSERT INTO Groups (name) VALUES (?)', new_group)
-    groupID = cursor.execute('SELECT ID FROM Groups WHERE name=?', (group_name, ))
-    cursor.execute('INSERT INTO group_user (groupID, userID) VALUES (?, ?)', (groupID, userID, ))
-    connection.commit()
-    connection.close()
+    DatabaseCursor.execute('INSERT INTO Groups (name) VALUES (?)', new_group)
+    groupID = DatabaseCursor.execute('SELECT ID FROM Groups WHERE name=?', (group_name, ))
+    DatabaseCursor.execute('INSERT INTO group_user (groupID, userID) VALUES (?, ?)', (groupID, userID, ))
     
 @app.route('/add-members')
 def add_members():
+    global DatabaseCursor
     data = json.loads(request.data)
     member_list = data['member_list']
     groupID = data['groupID']
-    connection = sqlite3.connect('data.db')
-    cursor = connection.cursor()
     for member_name in member_list:
-        memberID = cursor.execute('SELECT ID FROM Users WHERE name=?', (member_name, ))
+        memberID = DatabaseCursor.execute('SELECT ID FROM Users WHERE name=?', (member_name, ))
         if memberID is not None:
-            cursor.execute('INSERT INTO group_user (groupID, userID) VALUES (?, ?)', (groupID, memberID))
-    connection.commit()
-    connection.close()
+            DatabaseCursor.execute('INSERT INTO group_user (groupID, userID) VALUES (?, ?)', (groupID, memberID))
+
 """
 
     /debug - a site that calls /debug-data to receive the latest data
@@ -134,18 +123,15 @@ def chat_app():
 
 @app.route('/debug-data')
 def debug_data():
-    connection = sqlite3.connect('data.db')
-    cursor = connection.cursor()
-    users = cursor.execute("SELECT * FROM Users")
+    global DatabaseCursor
+    users = DatabaseCursor.execute("SELECT * FROM Users")
     users = users.fetchall()
-    connection.close()
     return json.dumps(users)
 
 @app.route('/token-data')
 def token_data():
-    connection = sqlite3.connect('data.db')
-    cursor = connection.cursor()
-    tokens = cursor.execute("SELECT * FROM Tokens")
+    global DatabaseCursor
+    tokens = DatabaseCursor.execute("SELECT * FROM Tokens")
     tokens = tokens.fetchall()
     connection.close()
     return json.dumps(tokens)
@@ -158,10 +144,11 @@ def token_data():
 
 @socketio.on('auth', namespace='/chat')
 def auth(message):
+    global DatabaseCursor
     print(message)
     token = message['token']
     ID = message['ID']
-    if chat_functions.verify_token(ID, token):
+    if chat_functions.verify_token(ID, token, DatabaseCursor):
         last_messages = chat_functions.get_recent_messages(ID) # TODO: create get_recent_messages
         emit('auth_success', {'status': 'success', 'last_messages': last_messages})
         join_room(ID)
@@ -217,12 +204,9 @@ def close(message):
 
 
 def save_msg_to_db(message):
-    connection = sqlite3.connect('data.db')
-    cursor = connection.cursor()
+    global DatabaseCursor
     t = (None, 23, 0, 1, message)
-    cursor.execute('insert into Messages values (?, ?, ?, ?, ?)', t)
-    connection.commit()
-    connection.close()
+    DatabaseCursor.execute('insert into Messages values (?, ?, ?, ?, ?)', t)
 
 
 @socketio.on('my_room_event', namespace='/test')
