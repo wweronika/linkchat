@@ -7,6 +7,7 @@ import random
 import string
 import chat_functions
 import secret
+from flask_mysqldb import MySQL
 
 """
 

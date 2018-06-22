@@ -1,5 +1,5 @@
 flask
 flask-socketio
-flask-mysql
+flask-mysqldb
 eventlet
 
