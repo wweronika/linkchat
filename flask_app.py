@@ -30,8 +30,9 @@ app.config['MYSQL_DATABASE_HOST'] = secret.host
 mysql = MySQL(app)
 
 
-# Database connection object
-DatabaseCursor = mysql.connect().cursor()
+# a global Database connection object
+DatabaseConnection = mysql.connect()
+DatabaseCursor = DatabaseConnection.cursor()
 
 @app.route('/')
 def index():
@@ -51,6 +52,7 @@ def register_verify():
     print(request.form['login'])
     t = (request.form['login'], '123', '123', request.form['email'])
     DatabaseCursor.execute('insert into Users (login, password, salt, email) values(?,?,?,?)', t)
+    DatabaseConnection.commit()
     return redirect(url_for('index'))
 
 @app.route('/login', methods=['post', 'get'])
@@ -124,17 +126,14 @@ def chat_app():
 
 @app.route('/debug-data')
 def debug_data():
-    global DatabaseCursor
-    users = DatabaseCursor.execute("SELECT * FROM Users")
-    users = users.fetchall()
+    DatabaseCursor.execute("SELECT * FROM Users")
+    users = DatabaseCursor.fetchall()
     return json.dumps(users)
 
 @app.route('/token-data')
 def token_data():
-    global DatabaseCursor
-    tokens = DatabaseCursor.execute("SELECT * FROM Tokens")
-    tokens = tokens.fetchall()
-    connection.close()
+    DatabaseCursor.execute("SELECT * FROM Tokens")
+    tokens = DatabaseCursor.fetchall()
     return json.dumps(tokens)
 
 '''
