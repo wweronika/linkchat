@@ -62,6 +62,7 @@ var chatApp = new Vue({
         },
         sendMessage: function () {
             let message = this.currentMessage
+            console.log('sending ' + message )
             this.socket.emit('message', {text: message, groupID: this.activeGroup.ID})
         },
         initSocket() {
@@ -73,6 +74,11 @@ var chatApp = new Vue({
             SELF.socket.on('connect', function() {
                 console.log('connected')
                 SELF.socket.emit('auth', {token: SELF.userData.token, ID: SELF.userData.ID});
+                
+            });
+
+            SELF.socket.on('message', function(message) {
+                console.log('message recived: ' + message['text'])
                 
             });
 

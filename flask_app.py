@@ -51,7 +51,7 @@ def register_verify():
     print(request.form)
     print(request.form['login'])
     t = (request.form['login'], '123', '123', request.form['email'])
-    DatabaseCursor.execute('insert into Users (login, password, salt, email) values(?,?,?,?)', t)
+    DatabaseCursor.execute('insert into Users (login, password, salt, email) values(%s,%s,%s,%s)', t)
     DatabaseConnection.commit()
     return redirect(url_for('index'))
 
@@ -65,8 +65,8 @@ def login_verify():
     global DatabaseCursor
     data = request.data
     login = json.loads(data)['login']
-    check_login = DatabaseCursor.execute('select ID from Users where login=?', (login, ))
-    ID = check_login.fetchone()
+    check_login = DatabaseCursor.execute('select ID from Users where login=%s', (login, ))
+    ID = DatabaseCursor.fetchone()
 
     if ID is None:
         message = {}
@@ -80,7 +80,8 @@ def login_verify():
             range(20))
         
         new_token = (ID[0], token, "user_info_some_day", )
-        DatabaseCursor.execute('insert into Tokens values (?, ?, ?)', new_token)
+        DatabaseCursor.execute('insert into Tokens values (%s, %s, %s)', new_token)
+        DatabaseConnection.commit()
         message = {}
         message['status'] = 'success'
         message['token'] = token
@@ -95,9 +96,10 @@ def create_group():
     group_name = data['group_name']
     userID = data['userID']
     new_group = (group_name, )
-    DatabaseCursor.execute('INSERT INTO Groups (name) VALUES (?)', new_group)
-    groupID = DatabaseCursor.execute('SELECT ID FROM Groups WHERE name=?', (group_name, ))
-    DatabaseCursor.execute('INSERT INTO group_user (groupID, userID) VALUES (?, ?)', (groupID, userID, ))
+    DatabaseCursor.execute('INSERT INTO Groups (name) VALUES (%s)', new_group)
+    groupID = DatabaseCursor.execute('SELECT ID FROM Groups WHERE name=%s', (group_name, ))
+    DatabaseCursor.execute('INSERT INTO group_user (groupID, userID) VALUES (%s, %s)', (groupID, userID, ))
+    DatabaseConnection.commit()
     
 @app.route('/add-members')
 def add_members():
@@ -106,9 +108,10 @@ def add_members():
     member_list = data['member_list']
     groupID = data['groupID']
     for member_name in member_list:
-        memberID = DatabaseCursor.execute('SELECT ID FROM Users WHERE name=?', (member_name, ))
+        memberID = DatabaseCursor.execute('SELECT ID FROM Users WHERE name=%s', (member_name, ))
         if memberID is not None:
-            DatabaseCursor.execute('INSERT INTO group_user (groupID, userID) VALUES (?, ?)', (groupID, memberID))
+            DatabaseCursor.execute('INSERT INTO group_user (groupID, userID) VALUES (%s, %s)', (groupID, memberID))
+            DatabaseConnection.commit()
 
 """
 
@@ -152,15 +155,44 @@ def auth(message):
         last_messages = chat_functions.get_recent_messages(ID) # TODO: create get_recent_messages
         emit('auth_success', {'status': 'success', 'last_messages': last_messages})
         join_room(ID)
-        session['ID'] = ID # Client's ID is mapped with his socket
+        session['ID'] = str(ID) # Client's ID is mapped with his socket, so the server remembers the user 
     
     else:
         emit('auth_success', {'status': 'fail'})
 
 @socketio.on('message', namespace='/chat')
 def receive_message(message):
+    
+    # Retrieve the message info
     user_ID = session['ID']
-    group_ID = session['groupID']
+    group_ID = message['groupID']
+    text = message['text']
+
+    # Insert the message into the DB
+    data = (user_ID, group_ID, text,)
+    sql = 'INSERT INTO Messages (senderID, isLink, groupID, text) VALUES(%s, false, %s, %s)'
+    DatabaseCursor.execute(sql, data)
+    DatabaseConnection.commit()
+
+    # Emit the message to users in the group
+    ## 1. Get users in the message's group
+
+    data = (group_ID,)
+    sql = 'SELECT userID from group_user where groupID=%s'
+    DatabaseCursor.execute(sql,data)
+    reciptients = DatabaseCursor.fetchall()
+    #print('===============')
+    #print(reciptients)
+    #print('===============')
+    ## 2. Send the event to each user
+
+    for reciptient in reciptients:
+        reciptient = str(reciptient[0])
+        print(reciptient)
+        emit('message', {'text': text, 'userID': user_ID},
+            room=reciptient)
+    
+    
 
 @socketio.on('disconnect_request', namespace='/chat')
 def disconnect_request():
@@ -206,7 +238,8 @@ def close(message):
 def save_msg_to_db(message):
     global DatabaseCursor
     t = (None, 23, 0, 1, message)
-    DatabaseCursor.execute('insert into Messages values (?, ?, ?, ?, ?)', t)
+    DatabaseCursor.execute('insert into Messages values (%s, %s, %s, %s, %s)', t)
+    DatabaseConnection.commit()
 
 
 @socketio.on('my_room_event', namespace='/test')
