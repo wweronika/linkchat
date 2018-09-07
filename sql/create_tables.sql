@@ -35,8 +35,9 @@ CREATE TABLE `messages` (
 	`date` DATETIME NOT NULL,
 	`is_link` bool NOT NULL DEFAULT '0',
 	`parent_link_id` int,
-	PRIMARY KEY (`message_jd`)
+	PRIMARY KEY (`message_id`)
 );
+
 
 CREATE TABLE `tokens` (
 	`user_id` int NOT NULL,
@@ -53,7 +54,7 @@ ALTER TABLE `user_group` ADD CONSTRAINT `user_group_fk0` FOREIGN KEY (`group_id`
 
 ALTER TABLE `user_group` ADD CONSTRAINT `user_group_fk1` FOREIGN KEY (`user_id`) REFERENCES `users`(`user_id`);
 
-ALTER TABLE `links` ADD CONSTRAINT `links_fk0` FOREIGN KEY (`message_id`) REFERENCES `messages`(`message_jd`);
+ALTER TABLE `links` ADD CONSTRAINT `links_fk0` FOREIGN KEY (`message_id`) REFERENCES `messages`(`message_id`);
 
 ALTER TABLE `messages` ADD CONSTRAINT `messages_fk0` FOREIGN KEY (`sender_id`) REFERENCES `users`(`user_id`);
 
