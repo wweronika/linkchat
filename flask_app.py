@@ -8,6 +8,8 @@ import string
 import chat_functions
 import secret
 from flaskext.mysql import MySQL
+import emailaccess
+import secrets
 
 """
 
@@ -51,8 +53,17 @@ def register_verify():
     print(request.form)
     print(request.form['login'])
     t = (request.form['login'], '123', '123', request.form['email'])
-    DatabaseCursor.execute('insert into Users (login, password, salt, email) values(%s,%s,%s,%s)', t)
-    DatabaseConnection.commit()
+    DatabaseCursor.execute('INSERT INTO users (login, salted_password, salt, email) VALUES(%s,%s,%s,%s)', t)
+    
+    account_activation_token = secrets.token_urlsafe()
+    try:
+        emailaccess.send_activation_message(request.form['email'], account_activation_token)
+
+        DatabaseCursor.execute('INSERT INTO activation_links VALUES (%s, NOW(), %s)', (account_activation_token, request.form['login']))
+        DatabaseConnection.commit()
+    except e:
+        return "stuff went wrong, try again"
+
     return redirect(url_for('index'))
 
 @app.route('/login', methods=['post', 'get'])
@@ -65,7 +76,7 @@ def login_verify():
     global DatabaseCursor
     data = request.data
     login = json.loads(data)['login']
-    check_login = DatabaseCursor.execute('select ID from Users where login=%s', (login, ))
+    check_login = DatabaseCursor.execute('select user_id from users where login=%s', (login, ))
     ID = DatabaseCursor.fetchone()
 
     if ID is None:
@@ -79,8 +90,8 @@ def login_verify():
             random.SystemRandom().choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in
             range(20))
         
-        new_token = (ID[0], token, "user_info_some_day", )
-        DatabaseCursor.execute('insert into Tokens values (%s, %s, %s)', new_token)
+        new_token = (ID[0], token )
+        DatabaseCursor.execute('insert into tokens values (%s, %s)', new_token)
         DatabaseConnection.commit()
         message = {}
         message['status'] = 'success'
@@ -96,9 +107,9 @@ def create_group():
     group_name = data['group_name']
     userID = data['userID']
     new_group = (group_name, )
-    DatabaseCursor.execute('INSERT INTO Groups (name) VALUES (%s)', new_group)
-    groupID = DatabaseCursor.execute('SELECT ID FROM Groups WHERE name=%s', (group_name, ))
-    DatabaseCursor.execute('INSERT INTO group_user (groupID, userID) VALUES (%s, %s)', (groupID, userID, ))
+    DatabaseCursor.execute('INSERT INTO groups (name) VALUES (%s)', new_group)
+    groupID = DatabaseCursor.execute('SELECT ID FROM groups WHERE name=%s', (group_name, ))
+    DatabaseCursor.execute('INSERT INTO user_group (group_id, user_id) VALUES (%s, %s)', (groupID, userID, ))
     DatabaseConnection.commit()
     
 @app.route('/add-members')
@@ -106,12 +117,29 @@ def add_members():
     global DatabaseCursor
     data = json.loads(request.data)
     member_list = data['member_list']
-    groupID = data['groupID']
+    groupID = data['group_id']
     for member_name in member_list:
-        memberID = DatabaseCursor.execute('SELECT ID FROM Users WHERE name=%s', (member_name, ))
+        memberID = DatabaseCursor.execute('SELECT user_id FROM users WHERE name=%s', (member_name, ))
         if memberID is not None:
-            DatabaseCursor.execute('INSERT INTO group_user (groupID, userID) VALUES (%s, %s)', (groupID, memberID))
+            DatabaseCursor.execute('INSERT INTO user_group (groupID, userID) VALUES (%s, %s)', (groupID, memberID))
             DatabaseConnection.commit()
+
+
+@app.route('/activate-account/<token>')
+def account_activation (token):
+    DatabaseCursor.execute('SELECT user_login from activation_links WHERE token=%s', (token, ))
+    
+    response = DatabaseCursor.fetchone()
+
+    if response is None:
+        return "Wrong activation code, can u even copy paste?"
+
+    login = response[0]
+
+    DatabaseCursor.execute('UPDATE users SET is_active=1 WHERE login=%s', (login, ))
+    DatabaseConnection.commit()
+
+    return "Account active, log in now"
 
 """
 
@@ -129,13 +157,13 @@ def chat_app():
 
 @app.route('/debug-data')
 def debug_data():
-    DatabaseCursor.execute("SELECT * FROM Users")
+    DatabaseCursor.execute("SELECT * FROM users")
     users = DatabaseCursor.fetchall()
     return json.dumps(users)
 
 @app.route('/token-data')
 def token_data():
-    DatabaseCursor.execute("SELECT * FROM Tokens")
+    DatabaseCursor.execute("SELECT * FROM tokens")
     tokens = DatabaseCursor.fetchall()
     return json.dumps(tokens)
 
@@ -160,6 +188,18 @@ def auth(message):
     else:
         emit('auth_success', {'status': 'fail'})
 
+
+
+@socketio.on('get_message_history', namespace='/chat')
+def get_message_history(message):
+    if session['ID'] is None:
+        emit('fail', {'status': 'socket not authorised'})
+        return
+    
+    ## TODO: SKOŃCZYLIŚMY TUTAJ
+    
+
+
 @socketio.on('message', namespace='/chat')
 def receive_message(message):
     
@@ -170,15 +210,16 @@ def receive_message(message):
 
     # Insert the message into the DB
     data = (user_ID, group_ID, text,)
-    sql = 'INSERT INTO Messages (senderID, isLink, groupID, text) VALUES(%s, false, %s, %s)'
+    sql = 'INSERT INTO messages (sender_id, is_link, group_id, text) VALUES(%s, false, %s, %s)'
     DatabaseCursor.execute(sql, data)
     DatabaseConnection.commit()
 
     # Emit the message to users in the group
     ## 1. Get users in the message's group
 
+
     data = (group_ID,)
-    sql = 'SELECT userID from group_user where groupID=%s'
+    sql = 'SELECT user_id from user_group where group_idX=%s'
     DatabaseCursor.execute(sql,data)
     reciptients = DatabaseCursor.fetchall()
     #print('===============')
@@ -192,6 +233,7 @@ def receive_message(message):
         emit('message', {'text': text, 'userID': user_ID},
             room=reciptient)
     
+    DatabaseCursor.execute('UPDATE groups SET last_message=NOW() WHERE group_id=%s',(group_ID, ))
     
 
 @socketio.on('disconnect_request', namespace='/chat')

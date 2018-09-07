@@ -20,7 +20,7 @@ CREATE TABLE `users` (
 	PRIMARY KEY (`user_id`)
 );
 
-CREATE TABLE `Links` (
+CREATE TABLE `links` (
 	`link_id` int NOT NULL AUTO_INCREMENT,
 	`message_id` int NOT NULL,
 	`date` DATETIME NOT NULL,
@@ -29,7 +29,7 @@ CREATE TABLE `Links` (
 
 CREATE TABLE `messages` (
 	`message_jd` int NOT NULL AUTO_INCREMENT,
-	`sender_jd` int NOT NULL,
+	`sender_id` int NOT NULL,
 	`group_id` int NOT NULL,
 	`text` TEXT NOT NULL,
 	`date` DATETIME NOT NULL,
@@ -43,16 +43,22 @@ CREATE TABLE `tokens` (
 	`token` TEXT NOT NULL
 );
 
+CREATE TABLE `activation_links` (
+	`token` TEXT NOT NULL,
+	`date` DATETIME NOT NULL,
+	`user_login` TEXT NOT NULL
+);
+
 ALTER TABLE `user_group` ADD CONSTRAINT `user_group_fk0` FOREIGN KEY (`group_id`) REFERENCES `groups`(`group_id`);
 
 ALTER TABLE `user_group` ADD CONSTRAINT `user_group_fk1` FOREIGN KEY (`user_id`) REFERENCES `users`(`user_id`);
 
-ALTER TABLE `Links` ADD CONSTRAINT `Links_fk0` FOREIGN KEY (`message_id`) REFERENCES `messages`(`message_jd`);
+ALTER TABLE `links` ADD CONSTRAINT `links_fk0` FOREIGN KEY (`message_id`) REFERENCES `messages`(`message_jd`);
 
-ALTER TABLE `messages` ADD CONSTRAINT `messages_fk0` FOREIGN KEY (`sender_jd`) REFERENCES `users`(`user_id`);
+ALTER TABLE `messages` ADD CONSTRAINT `messages_fk0` FOREIGN KEY (`sender_id`) REFERENCES `users`(`user_id`);
 
 ALTER TABLE `messages` ADD CONSTRAINT `messages_fk1` FOREIGN KEY (`group_id`) REFERENCES `groups`(`group_id`);
 
-ALTER TABLE `messages` ADD CONSTRAINT `messages_fk2` FOREIGN KEY (`parent_link_id`) REFERENCES `Links`(`link_id`);
+ALTER TABLE `messages` ADD CONSTRAINT `messages_fk2` FOREIGN KEY (`parent_link_id`) REFERENCES `links`(`link_id`);
 
 ALTER TABLE `tokens` ADD CONSTRAINT `tokens_fk0` FOREIGN KEY (`user_id`) REFERENCES `users`(`user_id`);

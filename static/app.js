@@ -8,38 +8,7 @@ var chatApp = new Vue({
 
         },
         groups: [
-            {
-                ID: 1337,
-                title: 'BACZEK ZMIENIA',
-                messages: [
-                    {
-                        ID: 1, 
-                        author: 'baczek',
-                        text: 'jadłem wczoraj prażynki'
-                    },
-                    {
-                        ID: 2,
-                        author: 'prażynka',
-                        text: 'nieeeeee'
-                    }
-                ]
-            },
-            {
-                ID: 2,
-                title: 'Konwersacja 2',
-                messages: [
-                    {
-                        ID: 1, 
-                        author: 'Hideo Kojima',
-                        text: 'jutro premiera death stranding'
-                    },
-                    {
-                        ID: 2,
-                        author: 'totalnieNieBaczek',
-                        text: 'Gdzie jest moje ps4'
-                    }
-                ]
-            }
+            
         ],
 
         currentMessage: "", 
