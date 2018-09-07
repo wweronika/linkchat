@@ -28,7 +28,7 @@ CREATE TABLE `links` (
 );
 
 CREATE TABLE `messages` (
-	`message_jd` int NOT NULL AUTO_INCREMENT,
+	`message_id` int NOT NULL AUTO_INCREMENT,
 	`sender_id` int NOT NULL,
 	`group_id` int NOT NULL,
 	`text` TEXT NOT NULL,

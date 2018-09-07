@@ -219,7 +219,7 @@ def receive_message(message):
 
 
     data = (group_ID,)
-    sql = 'SELECT user_id from user_group where group_idX=%s'
+    sql = 'SELECT user_id from user_group where group_id=%s'
     DatabaseCursor.execute(sql,data)
     reciptients = DatabaseCursor.fetchall()
     #print('===============')
@@ -229,8 +229,7 @@ def receive_message(message):
 
     for reciptient in reciptients:
         reciptient = str(reciptient[0])
-        print(reciptient)
-        emit('message', {'text': text, 'userID': user_ID},
+        emit('message', {'text': text, 'userID': user_ID, 'groupID': group_ID},
             room=reciptient)
     
     DatabaseCursor.execute('UPDATE groups SET last_message=NOW() WHERE group_id=%s',(group_ID, ))

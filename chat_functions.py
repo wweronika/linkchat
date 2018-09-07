@@ -23,3 +23,4 @@ def verify_user_name(user_name, cursor):
 
 def get_recent_messages(user_ID):
     return []
+
